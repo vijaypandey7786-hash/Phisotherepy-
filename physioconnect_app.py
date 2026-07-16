@@ -39,6 +39,32 @@ Notes: {notes}
     except Exception as e:
         return False, str(e)
 
+
+# ----- TELEGRAM PUSH NOTIFICATION (free, instant, no phone charges) -----
+# Set these two values in Streamlit's Secrets (see secrets.toml):
+#   TELEGRAM_BOT_TOKEN = "123456:ABC-your-bot-token"
+#   TELEGRAM_CHAT_ID   = "your-chat-id"
+import requests
+
+TELEGRAM_BOT_TOKEN = st.secrets.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = st.secrets.get("TELEGRAM_CHAT_ID", "")
+
+
+def send_telegram_notification(name):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False, "Telegram not set up yet (missing bot token / chat id in Secrets)."
+
+    message = f"Hey Shrey, you have a new patient! ({name})"
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+
+    try:
+        response = requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=10)
+        if response.status_code == 200:
+            return True, None
+        return False, f"Telegram API error: {response.text}"
+    except Exception as e:
+        return False, str(e)
+
 # Page Configuration for Mobile Responsiveness
 st.set_page_config(page_title="Dr. Shrey Pandey", page_icon="🩺", layout="centered")
 
@@ -114,6 +140,7 @@ elif menu == "📅 Bookings & Referrals":
                     notes=doc_notes,
                     source=source,
                 )
+                send_telegram_notification(name=p_name)
                 st.balloons()
                 st.success(f"🎉 Success! Appointment booked for {p_name}. Dr. Shrey's team will call you soon.")
                 if not sent:
@@ -132,7 +159,7 @@ elif menu == "👨‍⚕️ About Dr. Shrey":
         st.image(photo_path, width=220, caption="Dr. Shrey Pandey")
 
     st.markdown("""
-    **Dr. Shrey Pandey** *BPT, MPT | Consultant Physiotherapist*
+    **Dr. Shrey Pandey** *D.P.T., B.P.T. (2nd Year) | Consultant Physiotherapist*
 
     **Core Specializations:**
     * 🏃‍♂️ Sports Injury Rehabilitation
